@@ -6,11 +6,13 @@ type Coord = (V2 Int)
 
 data Tile = Empty
           | Occupied
+          | Wall
+          deriving (Show)
 
 data World = World { wCell   :: Coord
                    , wSize   :: Coord
                    , wTiles  :: Map.Map Coord Tile
-                   }
+                   } deriving (Show)
 
 
 
@@ -19,5 +21,8 @@ data World = World { wCell   :: Coord
 newWorld :: World
 newWorld = World { wCell = (V2 0 0)
                  , wSize = (V2 25 25)
-                 , wTiles = Map.empty
+                 , wTiles = createScreen
                  }
+
+createScreen :: Map.Map Coord Tile
+createScreen = Map.insert (V2 1 1) Wall $ Map.empty

@@ -26,14 +26,14 @@ deriving instance Ord SDL.Keysym
 
 gameLoop :: Set SDL.Keysym -> SDL.Surface -> Session IO s ->
             Wire s e IO (Set SDL.Keysym) World -> World -> IO ()
-gameLoop keysDown screen s w x = do
+gameLoop keysDown screen s wire world = do
     keysDown' <- parseEvents keysDown
     (ds, s') <- stepSession s
-    (ex, w') <- stepWire w ds (Right keysDown')
-    case ex of
+    (world', wire') <- stepWire wire ds (Right keysDown')
+    case world' of
       Right world -> do
         render world screen
-        gameLoop keysDown' screen s' w' world
+        gameLoop keysDown' screen s' wire' world
       Left _ -> return ()
 
 velocity :: (Monad m, Monoid e) => Wire e () m (Set SDL.Keysym) Coord
@@ -50,17 +50,27 @@ position x' = mkPure $ \ds dx ->
 cellPos :: (Monad m, HasTime t s) => Wire s () m (Set SDL.Keysym) Coord
 cellPos = proc keysDown -> do
   speed <- velocity -< keysDown
-  pos <- position (V2 1 1) -< speed
+  pos <- position (V2 0 0) -< speed
   returnA -< pos
+
+genWorld :: (Monoid s) => World -> Wire s () m Coord World
+genWorld x' = mkPure $ \ds dx ->
+                x' `seq` (Right x', genWorld (modWorld dx))
+              where
+                modWorld ds = World { wCell = ds
+                                   , wSize = (V2 25 25)
+                                   , wTiles = getTiles x'
+                                   }
+                getTiles z = case z of
+                               World {wTiles = tiles} -> tiles
+
 
 gameFrame :: (Monad m, HasTime t s) => Wire s () m (Set SDL.Keysym) World
 gameFrame = proc keysDown -> do
   nCell <- cellPos -< keysDown
+  nWorld <- genWorld newWorld -< (nCell)
 --  nTiles <- Map.empty
-  returnA -< World { wCell = nCell
-                   , wSize = (V2 25 25)
-                   , wTiles = Map.empty
-                   }
+  returnA -< nWorld
 
 main :: IO ()
 main = SDL.withInit [SDL.InitEverything] $ do
