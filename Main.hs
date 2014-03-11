@@ -12,6 +12,7 @@ import Data.Set (Set, empty, insert, delete, null, filter)
 import qualified Graphics.UI.SDL as SDL
 import Linear.V2
 import Control.Lens
+import qualified Data.Map as Map
 
 import Types
 import Render
@@ -19,13 +20,6 @@ import Render
 deriving instance Ord SDL.Keysym
 
 
---- Data Types
---
-
-newWorld :: World
-newWorld = World { cell = (V2 0 0)
-                 , size = (800 `div` 80)
-                 }
 --
 --- Functions
 --
@@ -62,8 +56,10 @@ cellPos = proc keysDown -> do
 gameFrame :: (Monad m, HasTime t s) => Wire s () m (Set SDL.Keysym) World
 gameFrame = proc keysDown -> do
   nCell <- cellPos -< keysDown
-  returnA -< World { cell = nCell
-                   , size = (800 `div` 80)
+--  nTiles <- Map.empty
+  returnA -< World { wCell = nCell
+                   , wSize = (V2 25 25)
+                   , wTiles = Map.empty
                    }
 
 main :: IO ()
