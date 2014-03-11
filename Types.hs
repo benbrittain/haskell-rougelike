@@ -7,7 +7,7 @@ type Coord = (V2 Int)
 data Tile = Empty
           | Occupied
           | Wall
-          deriving (Show)
+          deriving (Show, Eq)
 
 data World = World { wCell   :: Coord
                    , wSize   :: Coord

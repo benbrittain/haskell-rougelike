@@ -7,6 +7,7 @@ import Data.Monoid hiding ((<>))
 import Prelude hiding ((.), id, null, filter)
 import Control.Wire hiding (empty)
 import Control.Monad hiding (when)
+import Control.Monad.Fix hiding (when)
 import FRP.Netwire hiding (empty) -- has integral, currently unused
 import Data.Set (Set, empty, insert, delete, null, filter)
 import qualified Graphics.UI.SDL as SDL
@@ -43,14 +44,24 @@ velocity =  pure (V2 (-1) 0)  . when (keyDown SDL.SDLK_LEFT)
         <|> pure (V2 0 1)  . when (keyDown SDL.SDLK_DOWN)
         <|> pure (V2 0 0)
 
-position :: (Monoid s) => Coord -> Wire s () m Coord Coord
+position :: (Monoid s) => Coord -> Wire s () m (Coord, World) Coord
 position x' = mkPure $ \ds dx ->
-                x' `seq` (Right x', position (x' + dx))
-
-cellPos :: (Monad m, HasTime t s) => Wire s () m (Set SDL.Keysym) Coord
-cellPos = proc keysDown -> do
+                x' `seq` (Right x', position (x' + (checkValid x' dx)))
+              where
+                checkValid :: Coord -> (Coord, World) -> Coord
+                checkValid x' (coord, world) =
+                  case (Map.lookup (x' + coord) (wTiles world)) of
+                    Just Wall -> (V2 0 0)
+                    Nothing -> if(((x' + coord) ^._x >= 25) ||
+                                 ((x' + coord) ^._y >= 25)  ||
+                                 ((x' + coord) ^._x < 0)   ||
+                                 ((x' + coord) ^._y < 0))
+                                then (V2 0 0)
+                                else coord
+cellPos :: (Monad m, HasTime t s) => Wire s () m (World, Set SDL.Keysym) Coord
+cellPos = proc (world, keysDown) -> do
   speed <- velocity -< keysDown
-  pos <- position (V2 0 0) -< speed
+  pos <- position (V2 0 0) -< (speed, world)
   returnA -< pos
 
 genWorld :: (Monoid s) => World -> Wire s () m Coord World
@@ -65,11 +76,11 @@ genWorld x' = mkPure $ \ds dx ->
                                World {wTiles = tiles} -> tiles
 
 
-gameFrame :: (Monad m, HasTime t s) => Wire s () m (Set SDL.Keysym) World
+gameFrame :: (Control.Monad.Fix.MonadFix m, HasTime t s) => Wire s () m (Set SDL.Keysym) World
 gameFrame = proc keysDown -> do
-  nCell <- cellPos -< keysDown
-  nWorld <- genWorld newWorld -< (nCell)
---  nTiles <- Map.empty
+  rec
+    nCell <- cellPos -< (nWorld, keysDown)
+    nWorld <- genWorld newWorld -< (nCell)
   returnA -< nWorld
 
 main :: IO ()
