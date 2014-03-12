@@ -51,7 +51,9 @@ position x' = mkPure $ \ds dx ->
                 checkValid :: Coord -> (Coord, World) -> Coord
                 checkValid x' (coord, world) =
                   case (Map.lookup (x' + coord) (wTiles world)) of
-                    Just Wall -> (V2 0 0)
+                    Just Wall -> if (Just Wall == (Map.lookup x' (wTiles world)))
+                                   then coord
+                                   else (V2 0 0)
                     Nothing -> if(((x' + coord) ^._x >= 25) ||
                                  ((x' + coord) ^._y >= 25)  ||
                                  ((x' + coord) ^._x < 0)   ||
@@ -82,6 +84,7 @@ gameFrame = proc keysDown -> do
     nCell <- cellPos -< (nWorld, keysDown)
     nWorld <- genWorld newWorld -< (nCell)
   returnA -< nWorld
+
 
 main :: IO ()
 main = SDL.withInit [SDL.InitEverything] $ do
