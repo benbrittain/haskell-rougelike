@@ -22,11 +22,12 @@ data Cell = Cell { cColor :: (V3 Int)
                  }
 
 -- Experimenting with CA
-initMap :: (V2 Int) -> Map.Map Coord Tile
-initMap coord = Map.delete (V2 1 1) $ Map.fromList [(V2 x y, Wall) | x <- [0..3], y <- [0..3]]-- con = [(0, 0), (1, 0), (0, 1), (3, 3), (2, 3), (3, 2)]
+--initMap :: (V2 Int) -> Map.Map Coord Tile
+--initMap coord = Map.insert (V2 1 1) $ 
+--Map.fromList [(V2 x y, Wall) | x <- [0..3], y <- [0..3]]-- con = [(0, 0), (1, 0), (0, 1), (3, 3), (2, 3), (3, 2)]
 
-tmap 0 = initMap (V2 0 0)
-tmap n = step 100 $ tmap (n - 1)
+tmap 0 = Map.insert (V2 10 10) Wall Map.empty
+tmap n = step 30 $ tmap (n - 1)
 
 
 neighbours :: Coord -> Map.Map Coord Tile -> [Coord]
@@ -43,7 +44,7 @@ step size world = foldl (\acc x ->
 newWorld :: World
 newWorld = World { wCell = (V2 0 0)
                  , wSize = (V2 25 25)
-                 , wTiles = tmap 30
+                 , wTiles = tmap 41
                  }
 
 createScreen :: Map.Map Coord Tile
